@@ -4,7 +4,7 @@ El programa también le permite ajustar al usuario el voltaje de las placas refl
 
 Integrantes del grupo:
 <ul>
-  <li>Santiago Cordero</li>Santiago Cordero
+  <li>Santiago Cordero</li>
   <li>Diego Gudiel</li>
   <li>Juan Salguero</li>
 </ul>
