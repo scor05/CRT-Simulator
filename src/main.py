@@ -7,16 +7,17 @@ Todas las fuentes utilizadas en este código fueron obtenidas de dafont.com, der
 import math
 import sys
 import pygame
-from ElectronClass import Electron, E
-from PlacaClass import Placa, V_PLAQUE_MIN, V_CANNON_MAX, V_CANNON_MIN, V_PLAQUE_MAX, K
+from ElectronClass import Electron
+from PlacaClass import Placa, V_PLAQUE_MIN, V_PLAQUE_MAX
+from constants import V_CANNON_MAX, V_CANNON_MIN
 import os
 
-TUBE_LENGTH = 0.50 # longitud del tubo de rayos, 0.5 m
-SCREEN_DIMENSIONS = 0.1 # anchura de la pantalla de vista frontal (es también igual a la altura, 0.1 m)
-PLAQUE_LENGTH = 0.1 # longitud de las placas cuadradas, para determinar por cuántos frames aplicarle fuerza al electrón
-PLAQUE_SEPARATION = 0.005 # Distancia entre las placas 
-HORIZONTAL_PLAQUES_Z = 0.15 # a 0.15 m del cañón, se estrecha hasta z = 25
-VERTICAL_PLAQUES_Z = 0.30 # con 5cm de separación entre la horizontal, se estrecha a z = 40 (donde empieza la inclinación)
+TUBE_LENGTH = 1 # longitud del tubo de rayos, 
+SCREEN_DIMENSIONS = 0.2 # anchura de la pantalla de vista frontal (es también igual a la altura)
+PLAQUE_LENGTH = 0.2 # longitud de las placas cuadradas, para determinar por cuántos frames aplicarle fuerza al electrón
+PLAQUE_SEPARATION = 0.01 # Distancia entre las placas 
+HORIZONTAL_PLAQUES_Z = 0.3 # punto inicial de las placas horizontales
+VERTICAL_PLAQUES_Z = 0.6 # punto inicial de las placas verticales
 
 
 # Imagenes
@@ -49,10 +50,16 @@ ORIGIN_TOP = (50 - electron_sprite_half, 180 + 200//2)              # entrada de
 
 
 # prueba
-e = Electron(0,0,0,0,0,0.05,electronImg) # electron de prueba
+e = Electron(0,0,0,0,0,0.55,electronImg) # electron de prueba
 particulas.add(e)
 for p in particulas:
     front_electron_lifetime[p] = 10 # 1/3 de segundo por cada electrón (30fps / 10 frames)
+
+# Generación de placas
+horizontal_P1 = Placa(HORIZONTAL_PLAQUES_Z, 0.001)
+horizontal_P2 = Placa(HORIZONTAL_PLAQUES_Z, -0.001)
+vertical_P1 = Placa(VERTICAL_PLAQUES_Z, 0.001)
+vertical_P2 = Placa(VERTICAL_PLAQUES_Z, -0.001)
 
 def drawMargin(surface: pygame.Surface, rect: pygame.Rect, label: str, font: pygame.font.SysFont, borderColor, fillColor):
     pygame.draw.rect(surface, borderColor, rect, 4) # último parámetro es grosor de línea
@@ -88,10 +95,9 @@ def gameLoop(screen):
                 
         dt = gameClock.tick(FPS) / 1000
         
-        # Márgenes de las vistas
-        
         screen.fill((255,255,255))
         
+        # Márgenes de las vistas
         topViewRect = pygame.Rect(25,155,350,250)
         horizontalViewRect = pygame.Rect(25,540,350,250)
         frontViewRect = pygame.Rect(425,130,725,725)
@@ -112,12 +118,17 @@ def gameLoop(screen):
         for p in particulas:
             if (p.pos[2] < TUBE_LENGTH):
                 p.image.set_alpha(255)
+                if ((p.pos[2] >= horizontal_P1.Z and p.pos[2] <= horizontal_P1.Z + PLAQUE_LENGTH)):
+                    p.applyForce(horizontal_P1.exertForce(horizontal_P2, PLAQUE_SEPARATION), 0)
+                if ((p.pos[2] >= vertical_P1.Z and p.pos[2] <= vertical_P2.Z + PLAQUE_LENGTH)):
+                    p.applyForce(0, vertical_P1.exertForce(vertical_P2, PLAQUE_SEPARATION))
                 p.draw_in_view(screen, 'top', ORIGIN_TOP, SCALE_SIDES)
                 p.draw_in_view(screen, 'side', ORIGIN_SIDE, SCALE_SIDES)
             elif (front_electron_lifetime[p] != 0):
                 front_electron_lifetime[p] -= 1
                 alphaVal = p.calculateOpacity()
-                p.image.set_alpha(alphaVal)
+                p.image.set_alpha(255) # cambiar a alphaVal
+                p.velocity = [0,0,0] # resetear velocidad
                 p.draw_in_view(screen, 'front', ORIGIN_FRONT, SCALE_FRONT)
             elif (front_electron_lifetime[p] == 0):
                 front_electron_lifetime.pop(p)

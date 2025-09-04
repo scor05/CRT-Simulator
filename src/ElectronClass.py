@@ -34,11 +34,8 @@ factor de 255 porque pygame tiene opacidad máxima en 255, mínima en 0
 import os
 import math
 import pygame
-from PlacaClass import V_PLAQUE_MAX, V_CANNON_MAX, V_CANNON_MIN, V_PLAQUE_MIN
+from constants import E, M_E, V_CANNON_MIN, V_CANNON_MAX
 
-# Constantes físicas
-E = 1.602e-19 # Carga fundamental
-M_E = 9.11e-31 # Masa del electrón
 
 VZ_max = math.sqrt(2*E*V_CANNON_MAX/M_E)
 VZ_min = math.sqrt(2*E*V_CANNON_MIN/M_E)
@@ -46,15 +43,17 @@ VZ_min = math.sqrt(2*E*V_CANNON_MIN/M_E)
 def m_to_px(meters, scale):
     return meters*scale
 
+# NOTA: Las unidades de la masa fueron consideradas de tal forma que la masa
+# del electrón sea 1 (unidades arbitrarias) porque estaba retornando valores
+# de velocidad extremadamente altos (> 10^15 m/s^2)
 class Electron(pygame.sprite.Sprite):
-    mass = M_E
+    # mass = M_E
     
     def __init__(self, Xo, Yo, Zo, VoX, VoY, VoZ, img):
         super().__init__()
         self.pos = [Xo, Yo, Zo]
         # Velocidad en Z solo para simular frecuencia de golpeo de electrones (brillo).
         self.velocity = [VoX, VoY, VoZ]
-        self.accel = [0,0]
         self.image = img
         self.force = [0,0] # Empezar con Fnet = 0
         
@@ -66,17 +65,15 @@ class Electron(pygame.sprite.Sprite):
         return int(255*calc)
         
     def applyForce(self, Fx: float, Fy: float):
-        self.force = [Fx, Fy]
+        self.force[0] += Fx
+        self.force[1] += Fy
     
     def update(self, dt: float):
-        """ 
+        """
         dt -> intervalo de tiempo entre frames en seg.
         """
-        self.accel[0] = self.force[0] / self.mass
-        self.accel[1] = self.force[1] / self.mass
-        
-        self.velocity[0] += self.accel[0]*dt
-        self.velocity[1] += self.accel[1]*dt
+        self.velocity[0] += self.force[0]*dt
+        self.velocity[1] += self.force[1]*dt
         # velocidad en Z es constante, no se actualiza
         
         self.pos[0] += self.velocity[0]*dt
@@ -107,6 +104,6 @@ class Electron(pygame.sprite.Sprite):
             y_px = origin_px[1] - m_to_px(self.pos[0], scale)
         else:
             return
-
+        
         rect = self.image.get_rect(center=(x_px, y_px))
         surface.blit(self.image, rect)
