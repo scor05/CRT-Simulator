@@ -7,18 +7,17 @@ Todas las fuentes utilizadas en este código fueron obtenidas de dafont.com, der
 import math
 import sys
 import pygame
-from ElectronClass import Electron
+from ElectronClass import Electron, E
+from PlacaClass import Placa, V_PLAQUE_MIN, V_CANNON_MAX, V_CANNON_MIN, V_PLAQUE_MAX, K
 import os
 
-# Constantes físicas
-K = 8.99e9 # Constante de coulomb
-E = 1.602e-19 # Carga fundamental
 TUBE_LENGTH = 0.50 # longitud del tubo de rayos, 0.5 m
 SCREEN_DIMENSIONS = 0.1 # anchura de la pantalla de vista frontal (es también igual a la altura, 0.1 m)
 PLAQUE_LENGTH = 0.1 # longitud de las placas cuadradas, para determinar por cuántos frames aplicarle fuerza al electrón
 PLAQUE_SEPARATION = 0.005 # Distancia entre las placas 
 HORIZONTAL_PLAQUES_Z = 0.15 # a 0.15 m del cañón, se estrecha hasta z = 25
 VERTICAL_PLAQUES_Z = 0.30 # con 5cm de separación entre la horizontal, se estrecha a z = 40 (donde empieza la inclinación)
+
 
 # Imagenes
 electronImgPath = os.path.join(os.path.dirname(__file__), "..", "res", "electronSmall.png")
@@ -106,18 +105,20 @@ def gameLoop(screen):
         titleLabelRect = titleLabel.get_rect(center = (435,50))
         screen.blit(titleLabel, titleLabelRect)
         
-        
         # Imagenes de los tubos
         screen.blit(tubeTopImg, (50, 180))
         screen.blit(tubeBottomImg, (50, 560))
         
         for p in particulas:
             if (p.pos[2] < TUBE_LENGTH):
+                p.image.set_alpha(255)
                 p.draw_in_view(screen, 'top', ORIGIN_TOP, SCALE_SIDES)
                 p.draw_in_view(screen, 'side', ORIGIN_SIDE, SCALE_SIDES)
             elif (front_electron_lifetime[p] != 0):
                 front_electron_lifetime[p] -= 1
-                e.draw_in_view(screen, 'front', ORIGIN_FRONT, SCALE_FRONT)
+                alphaVal = p.calculateOpacity()
+                p.image.set_alpha(alphaVal)
+                p.draw_in_view(screen, 'front', ORIGIN_FRONT, SCALE_FRONT)
             elif (front_electron_lifetime[p] == 0):
                 front_electron_lifetime.pop(p)
                 particulas.remove(p)

@@ -19,7 +19,16 @@ import os
 import math
 import pygame
 
-class Placa(pygame.sprite.Sprites):
+# Voltaje de los cañones lo definimos en [200, 1000] V
+V_CANNON_MIN = 200
+V_CANNON_MAX = 1000
+# Voltajes de las placas las definimos como [-1000, 1000] V
+V_PLAQUE_MIN = -1000
+V_PLAQUE_MAX = 1000
+
+K = 8.99e9 # Constante de coulomb
+
+class Placa(pygame.sprite.Sprite):
     def __init__(self, X, Y, img):
         self.x = X
         self.y = Y

@@ -14,6 +14,8 @@ Kf - Ki + q*delta(V) = 0 -> Kf = 0 porque choca contra la pantalla
 q*deltaV = Ki
 1/2m(Vz)^2 = e*V
 Vz = sqrt(2eV/m) -> Velocidad en Z para cualquier voltaje del cañón
+Por ende -> Vmin = sqrt(2eVmin_cañon/m)
+Vmax = sqrt(2eVmax_cañon/m)
 
 Cada instancia del electrón se inicializa con esa mangitud de velocidad y esa
 se mantiene constante durante toda su trayectoria porque el campo eléctrico de
@@ -25,18 +27,27 @@ en Z -> t = x/v_z
 
 Para el brillo, se usará la siguiente ecuación para determinar la fracción
 de opacidad que tendrá la imagen del electrón en la placa frontal:
-b = (Vz - Vz_min) / (Vz_max - Vz_min)
+b = (Vz - Vz_min) * 255/ (Vz_max - Vz_min)
+factor de 255 porque pygame tiene opacidad máxima en 255, mínima en 0
 """
 
 import os
 import math
 import pygame
+from PlacaClass import V_PLAQUE_MAX, V_CANNON_MAX, V_CANNON_MIN, V_PLAQUE_MIN
+
+# Constantes físicas
+E = 1.602e-19 # Carga fundamental
+M_E = 9.11e-31 # Masa del electrón
+
+VZ_max = math.sqrt(2*E*V_CANNON_MAX/M_E)
+VZ_min = math.sqrt(2*E*V_CANNON_MIN/M_E)
 
 def m_to_px(meters, scale):
     return meters*scale
 
 class Electron(pygame.sprite.Sprite):
-    mass = 9.11e-31
+    mass = M_E
     
     def __init__(self, Xo, Yo, Zo, VoX, VoY, VoZ, img):
         super().__init__()
@@ -48,6 +59,11 @@ class Electron(pygame.sprite.Sprite):
         self.force = [0,0] # Empezar con Fnet = 0
         
         self.rect = self.image.get_rect()
+    
+    def calculateOpacity(self) -> int:
+        calc = (self.velocity[2] - VZ_min) / (VZ_max - VZ_min)
+        calc = max(0, min(1, calc)) # estandarizar a [0,1] por si da error de negativos
+        return int(255*calc)
         
     def applyForce(self, Fx: float, Fy: float):
         self.force = [Fx, Fy]
@@ -65,7 +81,7 @@ class Electron(pygame.sprite.Sprite):
         
         self.pos[0] += self.velocity[0]*dt
         self.pos[1] += self.velocity[1]*dt
-        self.pos[2] += self.velocity[2]*dt 
+        self.pos[2] += self.velocity[2]*dt
         
         # Resetea la fuerza en cada frame
         self.force = [0,0]
