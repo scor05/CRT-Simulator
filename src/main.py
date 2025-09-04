@@ -20,10 +20,20 @@ PLAQUE_SEPARATION = 0.005 # Distancia entre las placas
 HORIZONTAL_PLAQUES_Z = 0.15 # a 0.15 m del cañón, se estrecha hasta z = 25
 VERTICAL_PLAQUES_Z = 0.30 # con 5cm de separación entre la horizontal, se estrecha a z = 40 (donde empieza la inclinación)
 
+# Imagenes
+electronImgPath = os.path.join(os.path.dirname(__file__), "..", "res", "electronSmall.png")
+electronImg = pygame.image.load(electronImgPath)
+tubeTopImgPath = os.path.join(os.path.dirname(__file__), "..", "res", "tubo_vista_vertical.png")
+tubeTopImg = pygame.image.load(tubeTopImgPath)
+tubeBottomImgPath = os.path.join(os.path.dirname(__file__), "..", "res", "tubo_vista_horizontal.png")
+tubeBottomImg = pygame.image.load(tubeBottomImgPath)
+imageList = [electronImg, tubeTopImg, tubeBottomImg]
+
 # Constantes de pygame
 FPS = 30
 gameClock = pygame.time.Clock()
 particulas = pygame.sprite.Group()
+front_electron_lifetime = {} # guarda cuántas frames le queda a cada electrón para que se borre
 labelFontPath = os.path.join(os.path.dirname(__file__), "..", "fonts", "game_over.ttf")
 titleFontPath = os.path.join(os.path.dirname(__file__), "..", "fonts", "PEPSI_pl.ttf")
 COLOR_WHITE =(255,255,255)
@@ -34,17 +44,16 @@ COLOR_LIGHT_GRAY = (220, 220, 220)
 SCALE_FRONT = 725 / SCREEN_DIMENSIONS   # 7250 px/m, la pantalla mide 725 px x 725 px (ver frontViewRect en gameloop)
 SCALE_SIDES = 300 / TUBE_LENGTH          # 600 px/m (la imagen de tubo mide 300x200, el ancho se usa aquí para la escala)
 ORIGIN_FRONT = (425 + 725//2, 130 + 725//2)  # centro del rect frontal
-ORIGIN_SIDE = (50, 560 + 200//2)             # entrada del tubo en vista lateral
-ORIGIN_TOP = (50, 180 + 200//2)              # entrada del tubo en vista superior
+electron_sprite_half = electronImg.get_width() // 2 # Ajustar offset por la sprite del electrón
+ORIGIN_SIDE = (50 - electron_sprite_half, 560 + 200//2)             # entrada del tubo en vista lateral
+ORIGIN_TOP = (50 - electron_sprite_half, 180 + 200//2)              # entrada del tubo en vista superior
 
-# Imagenes
-electronImgPath = os.path.join(os.path.dirname(__file__), "..", "res", "electronSmall.png")
-electronImg = pygame.image.load(electronImgPath)
-tubeTopImgPath = os.path.join(os.path.dirname(__file__), "..", "res", "tubo_vista_vertical.png")
-tubeTopImg = pygame.image.load(tubeTopImgPath)
-tubeBottomImgPath = os.path.join(os.path.dirname(__file__), "..", "res", "tubo_vista_horizontal.png")
-tubeBottomImg = pygame.image.load(tubeBottomImgPath)
-imageList = [electronImg, tubeTopImg, tubeBottomImg]
+
+# prueba
+e = Electron(0,0,0,0,0,0.05,electronImg) # electron de prueba
+particulas.add(e)
+for p in particulas:
+    front_electron_lifetime[p] = 10 # 1/3 de segundo por cada electrón (30fps / 10 frames)
 
 def drawMargin(surface: pygame.Surface, rect: pygame.Rect, label: str, font: pygame.font.SysFont, borderColor, fillColor):
     pygame.draw.rect(surface, borderColor, rect, 4) # último parámetro es grosor de línea
@@ -69,9 +78,6 @@ def createWindow():
     titleFont = pygame.font.Font(titleFontPath, 75)
     
     gameLoop(screen)
-    
-e = Electron(0,0,0,0,0,0.05,electronImg) # electron de prueba
-particulas.add(e)
 
 def gameLoop(screen):
     running = True
@@ -105,12 +111,18 @@ def gameLoop(screen):
         screen.blit(tubeTopImg, (50, 180))
         screen.blit(tubeBottomImg, (50, 560))
         
+        for p in particulas:
+            if (p.pos[2] < TUBE_LENGTH):
+                p.draw_in_view(screen, 'top', ORIGIN_TOP, SCALE_SIDES)
+                p.draw_in_view(screen, 'side', ORIGIN_SIDE, SCALE_SIDES)
+            elif (front_electron_lifetime[p] != 0):
+                front_electron_lifetime[p] -= 1
+                e.draw_in_view(screen, 'front', ORIGIN_FRONT, SCALE_FRONT)
+            elif (front_electron_lifetime[p] == 0):
+                front_electron_lifetime.pop(p)
+                particulas.remove(p)
+            
         particulas.update(dt)
-        e.draw_in_view(screen, 'front', ORIGIN_FRONT, SCALE_FRONT)
-
-        e.draw_in_view(screen, 'side', ORIGIN_SIDE, SCALE_SIDES)
-
-        e.draw_in_view(screen, 'top', ORIGIN_TOP, SCALE_SIDES)
         
         pygame.display.flip()
     
