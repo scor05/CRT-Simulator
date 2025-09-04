@@ -7,12 +7,18 @@ Todas las fuentes utilizadas en este código fueron obtenidas de dafont.com, der
 import math
 import sys
 import pygame
-from Electron import Electron
+from ElectronClass import Electron
 import os
 
 # Constantes físicas
 K = 8.99e9 # Constante de coulomb
 E = 1.602e-19 # Carga fundamental
+TUBE_LENGTH = 0.50 # longitud del tubo de rayos, 0.5 m
+SCREEN_DIMENSIONS = 0.1 # anchura de la pantalla de vista frontal (es también igual a la altura, 0.1 m)
+PLAQUE_LENGTH = 0.1 # longitud de las placas cuadradas, para determinar por cuántos frames aplicarle fuerza al electrón
+PLAQUE_SEPARATION = 0.005 # Distancia entre las placas 
+HORIZONTAL_PLAQUES_Z = 0.15 # a 0.15 m del cañón, se estrecha hasta z = 25
+VERTICAL_PLAQUES_Z = 0.30 # con 5cm de separación entre la horizontal, se estrecha a z = 40 (donde empieza la inclinación)
 
 # Constantes de pygame
 FPS = 30
@@ -25,6 +31,11 @@ COLOR_RED = (255,0,0)
 COLOR_GREEN = (0,255,0)
 COLOR_BLACK = (0,0,0)
 COLOR_LIGHT_GRAY = (220, 220, 220)
+SCALE_FRONT = 725 / SCREEN_DIMENSIONS   # 7250 px/m, la pantalla mide 725 px x 725 px (ver frontViewRect en gameloop)
+SCALE_SIDES = 300 / TUBE_LENGTH          # 600 px/m (la imagen de tubo mide 300x200, el ancho se usa aquí para la escala)
+ORIGIN_FRONT = (425 + 725//2, 130 + 725//2)  # centro del rect frontal
+ORIGIN_SIDE = (50, 560 + 200//2)             # entrada del tubo en vista lateral
+ORIGIN_TOP = (50, 180 + 200//2)              # entrada del tubo en vista superior
 
 # Imagenes
 electronImgPath = os.path.join(os.path.dirname(__file__), "..", "res", "electronSmall.png")
@@ -34,12 +45,6 @@ tubeTopImg = pygame.image.load(tubeTopImgPath)
 tubeBottomImgPath = os.path.join(os.path.dirname(__file__), "..", "res", "tubo_vista_horizontal.png")
 tubeBottomImg = pygame.image.load(tubeBottomImgPath)
 imageList = [electronImg, tubeTopImg, tubeBottomImg]
-
-# Márgenes
-topViewRect = pygame.Rect(100,100,350,250)
-horizontalViewRect = pygame.Rect(100,400,350,250)
-frontViewRect = pygame.Rect(650, 250, 500, 500)
-
 
 def drawMargin(surface: pygame.Surface, rect: pygame.Rect, label: str, font: pygame.font.SysFont, borderColor, fillColor):
     pygame.draw.rect(surface, borderColor, rect, 4) # último parámetro es grosor de línea
@@ -63,12 +68,10 @@ def createWindow():
     labelFont = pygame.font.Font(labelFontPath, 75)
     titleFont = pygame.font.Font(titleFontPath, 75)
     
-    for i in range(5):
-        e = Electron(100+50*i,100,0,0,0,electronImg)
-        particulas.add(e)
-    for p in particulas:
-        p.applyForce(K*E*E/30, K*E*E/30)
     gameLoop(screen)
+    
+e = Electron(0,0,0,0,0,0.05,electronImg) # electron de prueba
+particulas.add(e)
 
 def gameLoop(screen):
     running = True
@@ -81,6 +84,9 @@ def gameLoop(screen):
         dt = gameClock.tick(FPS) / 1000
         
         # Márgenes de las vistas
+        
+        screen.fill((255,255,255))
+        
         topViewRect = pygame.Rect(25,155,350,250)
         horizontalViewRect = pygame.Rect(25,540,350,250)
         frontViewRect = pygame.Rect(425,130,725,725)
@@ -100,10 +106,13 @@ def gameLoop(screen):
         screen.blit(tubeBottomImg, (50, 560))
         
         particulas.update(dt)
-        particulas.draw(screen)
+        e.draw_in_view(screen, 'front', ORIGIN_FRONT, SCALE_FRONT)
+
+        e.draw_in_view(screen, 'side', ORIGIN_SIDE, SCALE_SIDES)
+
+        e.draw_in_view(screen, 'top', ORIGIN_TOP, SCALE_SIDES)
         
         pygame.display.flip()
-        screen.fill((255,255,255))
     
     pygame.quit()
     sys.exit()
