@@ -32,8 +32,8 @@ Permite visualizar la trayectoria de electrones dentro del tubo, su interacción
   <li><b>Modo Manual/Sinusoidal para el voltaje</b> (<code>M</code>)</li>
   <li><b>Frecuencia en eje X</b> (<code>F/G</code>)</li>
   <li><b>Frecuencia en eje Y</b> (<code>V/B</code>)</li>
-  <li><b>Fase en eje X</b> (<code>R/T</code>)</li>
-  <li><b>Fase en eje Y</b> (<code>Y/H</code>)</li>
+  <li><b>Desfase</b> (<code>R/T</code>)</li>
+  <li><b>Latencia de electrones en pantalla</b> (<code>Y/H</code>)</li>
 </ul>
 
 <h2>Controles de Usuario</h2>
@@ -46,8 +46,7 @@ A/D: Voltaje horizontal
 M: Cambiar modo Manual/Sinusoidal
 F/G: Frecuencia X
 V/B: Frecuencia Y
-R/T: Fase X
-Y/H: Fase Y
+R/T: Desfase
 Z/X: Latencia en pantalla de cada electrón
 </pre>
 

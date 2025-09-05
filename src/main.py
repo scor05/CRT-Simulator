@@ -35,7 +35,7 @@ COLOR_BLACK = (0,0,0)
 COLOR_LIGHT_GRAY = (220, 220, 220)
 SCALE_FRONT = 725 / SCREEN_DIMENSIONS
 SCALE_SIDES = 350 / TUBE_LENGTH
-ORIGIN_FRONT = (425, 130)
+ORIGIN_FRONT = (400, 130)
 electron_sprite_half = electronImg.get_width() // 2 # Ajustar offset por la sprite del electrón
 ORIGIN_SIDE = (50 - electron_sprite_half, 560 + 200//2)             # entrada del tubo en vista lateral
 ORIGIN_TOP = (50 - electron_sprite_half, 180 + 200//2)              # entrada del tubo en vista superior
@@ -58,8 +58,7 @@ user_voltage_horiz = 0.0 # voltaje horizontal
 user_mode_sinusoidal = False
 user_freq_x = 1.0 # Hz, para las placas horizontales
 user_freq_y = 1.0 # Hz, para las placas verticales
-user_phase_x = 0.0 # rad
-user_phase_y = 0.0 # rad
+user_phase = 0 # rad
 user_latency = 100 # cantidad de frames que durará cada electrón
 AMPLITUDE = 0.06 # constante arbitraria para reducir voltajes
 
@@ -94,7 +93,7 @@ def createWindow():
 def gameLoop(screen):
     global global_time, last_electron_spawn
     global user_voltage_accel, user_voltage_vert, user_voltage_horiz
-    global user_mode_sinusoidal, user_phase_x, user_phase_y, user_freq_x, user_freq_y, user_latency
+    global user_mode_sinusoidal, user_phase, user_freq_x, user_freq_y, user_latency
     running = True
     
     while running:
@@ -103,35 +102,31 @@ def gameLoop(screen):
                 running = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_q:
-                    user_voltage_accel = max(VOLTAGE_ACCEL_MIN, user_voltage_accel - 0.1)
+                    user_voltage_accel =  min(VOLTAGE_ACCEL_MAX, user_voltage_accel+0.05)
                 elif event.key == pygame.K_e:
-                    user_voltage_accel = min(VOLTAGE_ACCEL_MAX, user_voltage_accel+0.1)
+                    user_voltage_accel = max(VOLTAGE_ACCEL_MIN, user_voltage_accel - 0.05)
                 elif event.key == pygame.K_w:
-                    user_voltage_vert = min(VOLTAGE_SIDES_LIMIT, user_voltage_vert+0.1)
+                    user_voltage_vert = min(VOLTAGE_SIDES_LIMIT, user_voltage_vert+0.05)
                 elif event.key == pygame.K_s:
-                    user_voltage_vert = max(-VOLTAGE_SIDES_LIMIT, user_voltage_vert-0.1)
+                    user_voltage_vert = max(-VOLTAGE_SIDES_LIMIT, user_voltage_vert-0.05)
                 elif event.key == pygame.K_a:
-                    user_voltage_horiz = max(-VOLTAGE_SIDES_LIMIT, user_voltage_vert-0.1)
+                    user_voltage_horiz = min(VOLTAGE_SIDES_LIMIT, user_voltage_horiz+0.05)
                 elif event.key == pygame.K_d:
-                    user_voltage_horiz = min(VOLTAGE_SIDES_LIMIT, user_voltage_horiz+0.1)
+                    user_voltage_horiz = max(-VOLTAGE_SIDES_LIMIT, user_voltage_horiz-0.05)
                 elif event.key == pygame.K_m:
                     user_mode_sinusoidal = not user_mode_sinusoidal
                 elif event.key == pygame.K_f:
-                    user_freq_x += 0.1
+                    user_freq_x += 0.05
                 elif event.key == pygame.K_g:
-                    user_freq_x = max(0.1, user_freq_x - 0.1)
+                    user_freq_x = max(0.1, user_freq_x - 0.05)
                 elif event.key == pygame.K_v:
-                    user_freq_y += 0.1
+                    user_freq_y += 0.05
                 elif event.key == pygame.K_b:
                     user_freq_y = max(0.1, user_freq_y - 0.1)
                 elif event.key == pygame.K_r:
-                    user_phase_x += 0.1
+                    user_phase += 0.05
                 elif event.key == pygame.K_t:
-                    user_phase_x -= 0.1
-                elif event.key == pygame.K_y:
-                    user_phase_y += 0.1
-                elif event.key == pygame.K_h:
-                    user_phase_y -= 0.1
+                    user_phase -= 0.05
                 elif event.key == pygame.K_z:
                     user_latency += 10
                 elif event.key == pygame.K_x:
@@ -159,14 +154,13 @@ def gameLoop(screen):
         
         # Renderizar controles dentro del rectángulo de usuario
         controls_text = [
-            f"Q+/E-: Voltaje aceleración = {user_voltage_accel:.1f} V",
-            f"W+/S-: Voltaje vertical = {user_voltage_vert:.1f} V",
-            f"A+/D-: Voltaje horizontal = {user_voltage_horiz:.1f} V",
+            f"Q+/E-: Voltaje aceleración = {user_voltage_accel:.2f} V",
+            f"W+/S-: Voltaje vertical = {user_voltage_vert:.2f} V",
+            f"A+/D-: Voltaje horizontal = {user_voltage_horiz:.2f} V",
             f"M: Modo = {'Sinusoidal' if user_mode_sinusoidal else 'Manual'}",
-            f"F+/G-: Frecuencia X = {user_freq_x:.1f} Hz",
-            f"V+/B-: Frecuencia Y = {user_freq_y:.1f} Hz",
-            f"R+/T-: Fase X = {user_phase_x:.2f} rad",
-            f"Y+/H-: Fase Y = {user_phase_y:.2f} rad",
+            f"F+/G-: Frecuencia X = {user_freq_x:.2f} Hz",
+            f"V+/B-: Frecuencia Y = {user_freq_y:.2f} Hz",
+            f"R+/T-: Desfase = {user_phase:.2f} rad",
             f"Z+/X-: Latencia en pantalla = {user_latency} frames",
         ]
 
@@ -202,9 +196,9 @@ def gameLoop(screen):
                 
                 # Definir voltajes de usuario (manual o sinusoidal)
                 if user_mode_sinusoidal:
-                    horizontal_P1.voltage = AMPLITUDE * math.sin(2*math.pi*user_freq_x*global_time + user_phase_x)
+                    horizontal_P1.voltage = AMPLITUDE * math.sin(2*math.pi*user_freq_x*global_time + user_phase)
                     horizontal_P2.voltage = -horizontal_P1.voltage
-                    vertical_P1.voltage = AMPLITUDE * math.sin(2*math.pi*user_freq_y*global_time + user_phase_y)
+                    vertical_P1.voltage = AMPLITUDE * math.sin(2*math.pi*user_freq_y*global_time)
                     vertical_P2.voltage = -vertical_P1.voltage
                 else:
                     horizontal_P1.voltage = AMPLITUDE * user_voltage_horiz
@@ -228,7 +222,7 @@ def gameLoop(screen):
                 # Quitar el delay que hay en que los electrones lleguen al final del tubo y se muestren en frontal
                 rect = p.image.get_rect(center=(int(ORIGIN_SIDE[0] + p.pos[2]*SCALE_SIDES),
                                         int(ORIGIN_SIDE[1] - p.pos[1]*SCALE_SIDES)))
-                if rect.centerx >= 335:
+                if rect.centerx >= 340:
                     p.pos[2] = TUBE_LENGTH  # forzar impacto
                 
             elif p.pos[2] >= TUBE_LENGTH and front_electron_lifetime[p] > 0:

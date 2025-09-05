@@ -115,10 +115,14 @@ class Electron(pygame.sprite.Sprite):
             
         rect = self.image.get_rect(center=(int(x_px), int(y_px)))
 
-        # Límites específicos para cada vista (para no dibujar afuera de ellas)
+        # Límites específicos para cada vista (para no dibujar afuera de ellas:
         if view == 'front':
-            if 425 <= rect.centerx <= 1150 and 130 <= rect.centery <= 855:
+            left = origin_px[0]
+            top = origin_px[1]
+            right = origin_px[0] + screenDimensions * scale
+            bottom = origin_px[1] + screenDimensions * scale
+            if left <= rect.centerx <= right and top <= rect.centery <= bottom:
                 surface.blit(self.image, rect)
         else:
-            if -100 < rect.centerx < 335 and -100 < rect.centery < 1000:
+            if -100 < rect.centerx < 340 and -100 < rect.centery < 1000:
                 surface.blit(self.image, rect)

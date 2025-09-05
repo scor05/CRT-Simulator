@@ -12,4 +12,4 @@ HORIZONTAL_PLAQUES_Z = 0.3 # punto inicial de las placas horizontales
 VERTICAL_PLAQUES_Z = 0.3 # punto inicial de las placas verticales
 VOLTAGE_ACCEL_MAX = 3 # voltaje máximo del cañón
 VOLTAGE_ACCEL_MIN = 1 # voltaje mínimo del cañón
-VOLTAGE_SIDES_LIMIT = 1.1 # límite Vm para las placas
+VOLTAGE_SIDES_LIMIT = 1.05 # límite Vm para las placas
