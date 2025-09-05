@@ -36,7 +36,6 @@ import math
 import pygame
 from constants import E, M_E, V_CANNON_MIN, V_CANNON_MAX
 
-
 VZ_max = math.sqrt(2*E*V_CANNON_MAX/M_E)
 VZ_min = math.sqrt(2*E*V_CANNON_MIN/M_E)
 
@@ -51,17 +50,23 @@ class Electron(pygame.sprite.Sprite):
     
     def __init__(self, Xo, Yo, Zo, VoX, VoY, VoZ, img):
         super().__init__()
-        self.pos = [Xo, Yo, Zo]
-        # Velocidad en Z solo para simular frecuencia de golpeo de electrones (brillo).
-        self.velocity = [VoX, VoY, VoZ]
+        # Velocidad y posición en Z solo para simular frecuencia de golpeo de electrones (brillo).
+        # castear a float porque estaba dando errores de precisión
+        self.pos = [float(Xo), float(Yo), float(Zo)]
+        self.velocity = [float(VoX), float(VoY), float(VoZ)]
+        self.fixed = False
         self.image = img
         self.force = [0,0] # Empezar con Fnet = 0
         
         self.rect = self.image.get_rect()
     
     def calculateOpacity(self) -> int:
-        calc = (self.velocity[2] - VZ_min) / (VZ_max - VZ_min)
-        calc = max(0, min(1, calc)) # estandarizar a [0,1] por si da error de negativos
+        if VZ_max == VZ_min:  # caso de división por cero
+            return 255
+        
+        
+        calc = (abs(self.velocity[2]) - VZ_min) / (VZ_max - VZ_min)
+        calc = max(0.0, min(1.0, calc)) # estandarizar a [0,1] por si da error de negativos
         return int(255*calc)
         
     def applyForce(self, Fx: float, Fy: float):
@@ -72,6 +77,8 @@ class Electron(pygame.sprite.Sprite):
         """
         dt -> intervalo de tiempo entre frames en seg.
         """
+        dt = float(dt)
+        
         self.velocity[0] += self.force[0]*dt
         self.velocity[1] += self.force[1]*dt
         # velocidad en Z es constante, no se actualiza
@@ -80,10 +87,12 @@ class Electron(pygame.sprite.Sprite):
         self.pos[1] += self.velocity[1]*dt
         self.pos[2] += self.velocity[2]*dt
         
+        # print("x=",self.pos[0], "vx=", self.velocity[0], "y=",self.pos[1], "vy",self.velocity[1])
+        
         # Resetea la fuerza en cada frame
         self.force = [0,0]
         
-    def draw_in_view(self, surface, view, origin_px, scale):
+    def draw_in_view(self, surface, view, origin_px, scale, screenDimensions):
         """
         Para dibujar en las vistas horizontales, verticales y frontales porque cambia la escala por cada una.
         view  String = 'front', 'side', 'top'
@@ -92,8 +101,8 @@ class Electron(pygame.sprite.Sprite):
         """
         if view == 'front':  
             # vista frontal: pantalla en plano x-y
-            x_px = origin_px[0] + m_to_px(self.pos[0], scale)
-            y_px = origin_px[1] - m_to_px(self.pos[1], scale) # - porque en pygame +y es hacia abajo
+            x_px = origin_px[0] + (self.pos[0] + 0.5 * screenDimensions) * scale
+            y_px = origin_px[1] + (0.5 * screenDimensions - self.pos[1]) * scale
         elif view == 'side':
             # vista horizontal: z -> eje x, y -> eje y
             x_px = origin_px[0] + m_to_px(self.pos[2], scale)
@@ -104,6 +113,20 @@ class Electron(pygame.sprite.Sprite):
             y_px = origin_px[1] - m_to_px(self.pos[0], scale)
         else:
             return
-        
-        rect = self.image.get_rect(center=(x_px, y_px))
-        surface.blit(self.image, rect)
+                
+        # Verificar que las coordenadas sean válidas
+        if not (math.isfinite(x_px) and math.isfinite(y_px)):
+            print(f"Coordenadas inválidas en vista {view}: x_px={x_px}, y_px={y_px}")
+            print(f"Posición del electrón: {self.pos}")
+            return
+            
+        rect = self.image.get_rect(center=(int(x_px), int(y_px)))
+
+        # Límites específicos para cada vista
+        if view == 'front':
+            if 425 <= rect.centerx <= 1150 and 130 <= rect.centery <= 855:
+                surface.blit(self.image, rect)
+        else:
+            # Para vistas laterales, usar límites más amplios
+            if -100 < rect.centerx < 1200 and -100 < rect.centery < 1000:
+                surface.blit(self.image, rect)
