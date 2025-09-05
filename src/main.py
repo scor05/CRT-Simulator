@@ -150,7 +150,7 @@ def gameLoop(screen):
         
         drawMargin(screen, controlsRect, "Controles de Usuario", labelFont, COLOR_BLACK, COLOR_LIGHT_GRAY)
         drawMargin(screen, topViewRect, "Vista Superior", labelFont, COLOR_BLACK, COLOR_LIGHT_GRAY)
-        drawMargin(screen, horizontalViewRect, "Vista Horizontal", labelFont, COLOR_BLACK, COLOR_LIGHT_GRAY)
+        drawMargin(screen, horizontalViewRect, "Vista Lateral", labelFont, COLOR_BLACK, COLOR_LIGHT_GRAY)
         drawMargin(screen, frontViewRect, "Vista Frontal", labelFont, COLOR_BLACK, COLOR_LIGHT_GRAY)
         
         titleLabel = titleFont.render("Simulador de TRC", True, COLOR_BLACK)

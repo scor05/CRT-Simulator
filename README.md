@@ -60,7 +60,7 @@ Z/X: Latencia en pantalla de cada electrón
 pip install pygame
 </pre>
 
-<h2>▶️ Ejecución</h2>
+<h2>Ejecución</h2>
 <pre>
 git clone https://github.com/scor05/CRT-Simulator.git
 cd CRT-Simulator
@@ -79,8 +79,8 @@ CRT-Simulator/
 └── README.md            # Este archivo
 </pre>
 
-<h2>📖 Créditos</h2>
+<h2>Créditos</h2>
 <ul>
-  <li>Desarrollado como proyecto académico de Física 3 para el segundo ciclo del 2025.</li>
+  <li>Desarrollado como proyecto para la clase de Física 3 en el segundo ciclo del 2025.</li>
   <li>Autor: Santiago <i>scor05</i> Cordero</li>
 </ul>
