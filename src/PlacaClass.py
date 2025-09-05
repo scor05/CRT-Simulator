@@ -23,10 +23,6 @@ estén en el rango de coordenadas [L, 2L], donde L es la longitud de la placa (d
 
 from constants import E
 
-# Voltajes de las placas las definimos como [-1000, 1000] V
-V_PLAQUE_MIN = -1000
-V_PLAQUE_MAX = 1000
-
 # Se ignora el valor de la carga fundamental en el cálculo de exertForce por
 # la misma razón explicada en ElectronClass.py, estaba retornando valores
 # muy altos, por lo que se consideraron unidades arbitrarias.

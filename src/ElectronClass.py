@@ -128,5 +128,5 @@ class Electron(pygame.sprite.Sprite):
                 surface.blit(self.image, rect)
         else:
             # Para vistas laterales, usar límites más amplios
-            if -100 < rect.centerx < 1200 and -100 < rect.centery < 1000:
+            if -100 < rect.centerx < 335 and -100 < rect.centery < 1000:
                 surface.blit(self.image, rect)
