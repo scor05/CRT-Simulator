@@ -16,7 +16,7 @@ SCREEN_DIMENSIONS = 0.5 # anchura de la pantalla de vista frontal (es también i
 PLAQUE_LENGTH = 0.2 # longitud de las placas cuadradas, para determinar por cuántos frames aplicarle fuerza al electrón
 PLAQUE_SEPARATION = 0.05 # Distancia entre las placas 
 HORIZONTAL_PLAQUES_Z = 0.3 # punto inicial de las placas horizontales
-VERTICAL_PLAQUES_Z = 0.6 # punto inicial de las placas verticales
+VERTICAL_PLAQUES_Z = 0.3 # punto inicial de las placas verticales
 
 
 # Imagenes
@@ -53,10 +53,10 @@ electron_spawn_interval = 0.05
 last_electron_spawn = 0.0
 
 # Generación de placas
-horizontal_P1 = Placa(HORIZONTAL_PLAQUES_Z, 0.05)
-horizontal_P2 = Placa(HORIZONTAL_PLAQUES_Z, -0.05)
-vertical_P1 = Placa(VERTICAL_PLAQUES_Z, 0)
-vertical_P2 = Placa(VERTICAL_PLAQUES_Z, -0)
+horizontal_P1 = Placa(HORIZONTAL_PLAQUES_Z, 0.0)
+horizontal_P2 = Placa(HORIZONTAL_PLAQUES_Z, 0.0)
+vertical_P1 = Placa(VERTICAL_PLAQUES_Z, 0.0)
+vertical_P2 = Placa(VERTICAL_PLAQUES_Z, 0.0)
 
 # Variables de control del usuario:
 user_voltage_accel = 1.0 # voltaje de aceleración inicial (es igual a la velocidad porque Vz constante)
@@ -65,7 +65,8 @@ user_voltage_horiz = 0.0 # voltaje horizontal
 user_mode_sinusoidal = False
 user_freq_x = 1.0 # Hz, para las placas horizontales
 user_freq_y = 1.0 # Hz, para las placas verticales
-user_phase = 0.0 # rad
+user_phase_x = 0.0 # rad
+user_phase_y = 0.0 # rad
 SINE_AMPLITUDE = 0.06 # constante arbitraria para reducir el efecto del seno.
 
 
@@ -80,6 +81,7 @@ def drawMargin(surface: pygame.Surface, rect: pygame.Rect, label: str, font: pyg
     
 def createWindow():
     pygame.init()
+    pygame.key.set_repeat(200, 50) # para aguantar teclas
     screen = pygame.display.set_mode((1600,900))
     pygame.display.set_caption("Simulador de CRT")
     screen.fill((255,255,255))
@@ -96,7 +98,7 @@ def createWindow():
 def gameLoop(screen):
     global global_time, last_electron_spawn
     global user_voltage_accel, user_voltage_vert, user_voltage_horiz
-    global user_mode_sinusoidal, user_phase, user_freq_x, user_freq_y
+    global user_mode_sinusoidal, user_phase_x, user_phase_y, user_freq_x, user_freq_y
     running = True
     
     while running:
@@ -130,6 +132,14 @@ def gameLoop(screen):
                     user_phase += 0.1
                 elif event.key == pygame.K_t:
                     user_phase -= 0.1
+                elif event.key == pygame.K_r:
+                    user_phase_x += 0.1
+                elif event.key == pygame.K_t:
+                    user_phase_x -= 0.1
+                elif event.key == pygame.K_y:
+                    user_phase_y += 0.1
+                elif event.key == pygame.K_h:
+                    user_phase_y -= 0.1
                 
         dt = gameClock.tick(FPS) / 1000.0
         global_time += dt
@@ -159,7 +169,8 @@ def gameLoop(screen):
             f"M: Modo = {'Sinusoidal' if user_mode_sinusoidal else 'Manual'}",
             f"F/G: Frecuencia X = {user_freq_x:.1f} Hz",
             f"V/B: Frecuencia Y = {user_freq_y:.1f} Hz",
-            f"R/T: Fase = {user_phase:.2f} rad"
+            f"R/T: Fase X = {user_phase_x:.2f} rad",
+            f"Y/H: Fase Y = {user_phase_y:.2f} rad"
         ]
 
         y_offset = controlsRect.top + 30
@@ -192,15 +203,15 @@ def gameLoop(screen):
                 
                 # Definir fuerzas de usuario (manual o sinusoidal)
                 if user_mode_sinusoidal:
-                    horizontal_P1.voltage = SINE_AMPLITUDE * math.sin(2*math.pi*user_freq_x*global_time + user_phase)
-                    horizontal_P2.voltage = -1* horizontal_P1.voltage
-                    vertical_P1.voltage = SINE_AMPLITUDE * math.sin(2*math.pi*user_freq_y*global_time + user_phase)
-                    vertical_P2.voltage = -1* vertical_P2.voltage
+                    horizontal_P1.voltage = SINE_AMPLITUDE * math.sin(2*math.pi*user_freq_x*global_time + user_phase_x)
+                    horizontal_P2.voltage = -horizontal_P1.voltage
+                    vertical_P1.voltage = SINE_AMPLITUDE * math.sin(2*math.pi*user_freq_y*global_time + user_phase_y)
+                    vertical_P2.voltage = -vertical_P1.voltage
                 else:
                     horizontal_P1.voltage = user_voltage_horiz
-                    horizontal_P2.voltage = - horizontal_P1.voltage
+                    horizontal_P2.voltage = -horizontal_P1.voltage
                     vertical_P1.voltage = user_voltage_vert
-                    vertical_P2.voltage = - vertical_P1.voltage
+                    vertical_P2.voltage = -vertical_P1.voltage
 
                 force_x = 0.0
                 force_y = 0.0
@@ -234,7 +245,7 @@ def gameLoop(screen):
                         t_correction = overshoot / p.velocity[2]
                     else:
                         t_correction = 0
-
+                    
                     # Retroceder X e Y proporcionalmente
                     p.pos[0] -= p.velocity[0] * t_correction
                     p.pos[1] -= p.velocity[1] * t_correction
