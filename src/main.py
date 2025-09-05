@@ -9,15 +9,8 @@ import sys
 import pygame
 from ElectronClass import Electron
 from PlacaClass import Placa
+from constants import *
 import os
-
-TUBE_LENGTH = 1 # longitud del tubo de rayos 
-SCREEN_DIMENSIONS = 0.5 # anchura de la pantalla de vista frontal (es también igual a la altura)
-PLAQUE_LENGTH = 0.2 # longitud de las placas cuadradas, para determinar por cuántos frames aplicarle fuerza al electrón
-PLAQUE_SEPARATION = 0.05 # Distancia entre las placas 
-HORIZONTAL_PLAQUES_Z = 0.3 # punto inicial de las placas horizontales
-VERTICAL_PLAQUES_Z = 0.3 # punto inicial de las placas verticales
-
 
 # Imagenes
 electronImgPath = os.path.join(os.path.dirname(__file__), "..", "res", "electronSmall.png")
@@ -67,7 +60,8 @@ user_freq_x = 1.0 # Hz, para las placas horizontales
 user_freq_y = 1.0 # Hz, para las placas verticales
 user_phase_x = 0.0 # rad
 user_phase_y = 0.0 # rad
-SINE_AMPLITUDE = 0.06 # constante arbitraria para reducir el efecto del seno.
+user_latency = 100 # cantidad de frames que durará cada electrón
+AMPLITUDE = 0.06 # constante arbitraria para reducir voltajes
 
 
 def drawMargin(surface: pygame.Surface, rect: pygame.Rect, label: str, font: pygame.font.SysFont, borderColor, fillColor):
@@ -81,7 +75,8 @@ def drawMargin(surface: pygame.Surface, rect: pygame.Rect, label: str, font: pyg
     
 def createWindow():
     pygame.init()
-    pygame.key.set_repeat(200, 50) # para aguantar teclas
+    # set_repeat para aguantar teclas: primer parámetro delay, segundo intervalo de presión de la tecla (ms)
+    pygame.key.set_repeat(300, 50)
     screen = pygame.display.set_mode((1600,900))
     pygame.display.set_caption("Simulador de CRT")
     screen.fill((255,255,255))
@@ -89,16 +84,17 @@ def createWindow():
         i.convert_alpha
     
     # tipo de fuente personalizado
-    global labelFont, titleFont
-    labelFont = pygame.font.Font(labelFontPath, 65)
-    titleFont = pygame.font.Font(titleFontPath, 65)
+    global labelFont, titleFont, controlsFont
+    controlsFont = pygame.font.Font(labelFontPath, 55)
+    labelFont = pygame.font.Font(labelFontPath, 75)
+    titleFont = pygame.font.Font(titleFontPath, 75)
     
     gameLoop(screen)
 
 def gameLoop(screen):
     global global_time, last_electron_spawn
     global user_voltage_accel, user_voltage_vert, user_voltage_horiz
-    global user_mode_sinusoidal, user_phase_x, user_phase_y, user_freq_x, user_freq_y
+    global user_mode_sinusoidal, user_phase_x, user_phase_y, user_freq_x, user_freq_y, user_latency
     running = True
     
     while running:
@@ -107,17 +103,17 @@ def gameLoop(screen):
                 running = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_q:
-                    user_voltage_accel = max(1, user_voltage_accel - 0.1)
+                    user_voltage_accel = max(VOLTAGE_ACCEL_MIN, user_voltage_accel - 0.1)
                 elif event.key == pygame.K_e:
-                    user_voltage_accel += 0.1
+                    user_voltage_accel = min(VOLTAGE_ACCEL_MAX, user_voltage_accel+0.1)
                 elif event.key == pygame.K_w:
-                    user_voltage_vert += 0.1
+                    user_voltage_vert = min(VOLTAGE_SIDES_LIMIT, user_voltage_vert+0.1)
                 elif event.key == pygame.K_s:
-                    user_voltage_vert -= 0.1
+                    user_voltage_vert = max(-VOLTAGE_SIDES_LIMIT, user_voltage_vert-0.1)
                 elif event.key == pygame.K_a:
-                    user_voltage_horiz -= 0.1
+                    user_voltage_horiz = max(-VOLTAGE_SIDES_LIMIT, user_voltage_vert-0.1)
                 elif event.key == pygame.K_d:
-                    user_voltage_horiz += 0.1
+                    user_voltage_horiz = min(VOLTAGE_SIDES_LIMIT, user_voltage_horiz+0.1)
                 elif event.key == pygame.K_m:
                     user_mode_sinusoidal = not user_mode_sinusoidal
                 elif event.key == pygame.K_f:
@@ -129,10 +125,6 @@ def gameLoop(screen):
                 elif event.key == pygame.K_b:
                     user_freq_y = max(0.1, user_freq_y - 0.1)
                 elif event.key == pygame.K_r:
-                    user_phase += 0.1
-                elif event.key == pygame.K_t:
-                    user_phase -= 0.1
-                elif event.key == pygame.K_r:
                     user_phase_x += 0.1
                 elif event.key == pygame.K_t:
                     user_phase_x -= 0.1
@@ -140,6 +132,10 @@ def gameLoop(screen):
                     user_phase_y += 0.1
                 elif event.key == pygame.K_h:
                     user_phase_y -= 0.1
+                elif event.key == pygame.K_z:
+                    user_latency += 10
+                elif event.key == pygame.K_x:
+                    user_latency = max(1, user_latency-10)
                 
         dt = gameClock.tick(FPS) / 1000.0
         global_time += dt
@@ -149,8 +145,8 @@ def gameLoop(screen):
         # Márgenes de las vistas
         topViewRect = pygame.Rect(25, 155, 350, 250)
         horizontalViewRect = pygame.Rect(25, 540, 350, 250)
-        frontViewRect = pygame.Rect(425, 130, 725, 725)
-        controlsRect = pygame.Rect(1175, 105, 412, 750)
+        frontViewRect = pygame.Rect(400, 130, 725, 725)
+        controlsRect = pygame.Rect(1135, 130, 455, 485)
         
         drawMargin(screen, controlsRect, "Controles de Usuario", labelFont, COLOR_BLACK, COLOR_LIGHT_GRAY)
         drawMargin(screen, topViewRect, "Vista Superior", labelFont, COLOR_BLACK, COLOR_LIGHT_GRAY)
@@ -163,19 +159,20 @@ def gameLoop(screen):
         
         # Renderizar controles dentro del rectángulo de usuario
         controls_text = [
-            f"Q/E: Voltaje aceleración = {user_voltage_accel:.1f}",
-            f"W/S: Voltaje vertical = {user_voltage_vert:.1f}",
-            f"A/D: Voltaje horizontal = {user_voltage_horiz:.1f}",
+            f"Q+/E-: Voltaje aceleración = {user_voltage_accel:.1f} V",
+            f"W+/S-: Voltaje vertical = {user_voltage_vert:.1f} V",
+            f"A+/D-: Voltaje horizontal = {user_voltage_horiz:.1f} V",
             f"M: Modo = {'Sinusoidal' if user_mode_sinusoidal else 'Manual'}",
-            f"F/G: Frecuencia X = {user_freq_x:.1f} Hz",
-            f"V/B: Frecuencia Y = {user_freq_y:.1f} Hz",
-            f"R/T: Fase X = {user_phase_x:.2f} rad",
-            f"Y/H: Fase Y = {user_phase_y:.2f} rad"
+            f"F+/G-: Frecuencia X = {user_freq_x:.1f} Hz",
+            f"V+/B-: Frecuencia Y = {user_freq_y:.1f} Hz",
+            f"R+/T-: Fase X = {user_phase_x:.2f} rad",
+            f"Y+/H-: Fase Y = {user_phase_y:.2f} rad",
+            f"Z+/X-: Latencia en pantalla = {user_latency} frames",
         ]
 
         y_offset = controlsRect.top + 30
         for line in controls_text:
-            text_surface = labelFont.render(line, True, COLOR_BLACK)
+            text_surface = controlsFont.render(line, True, COLOR_BLACK)
             screen.blit(text_surface, (controlsRect.left + 10, y_offset))
             y_offset += 50
         
@@ -185,11 +182,10 @@ def gameLoop(screen):
         
         # Spawnar un electrón únicamente si ha pasado el intervalo de tiempo dado
         if global_time - last_electron_spawn >= electron_spawn_interval:
-            # Usar valores exactos para evitar acumulación de errores
             e = Electron(0.0, 0.0, 0.0, 0.0, 0.0, user_voltage_accel, electronImg)
             particulas.add(e)
             e.fixed = False
-            front_electron_lifetime[e] = 5
+            front_electron_lifetime[e] = user_latency
             last_electron_spawn = global_time
         
         # Lista temporal para evitar modificar el grupo durante iteración
@@ -198,23 +194,25 @@ def gameLoop(screen):
         
         for p in particulas:
             if p.pos[2] < TUBE_LENGTH:
-                # El electrón está viajando por el tubo
-                p.image.set_alpha(255)
                 
-                # Definir fuerzas de usuario (manual o sinusoidal)
-                if user_mode_sinusoidal:
-                    horizontal_P1.voltage = SINE_AMPLITUDE * math.sin(2*math.pi*user_freq_x*global_time + user_phase_x)
-                    horizontal_P2.voltage = -horizontal_P1.voltage
-                    vertical_P1.voltage = SINE_AMPLITUDE * math.sin(2*math.pi*user_freq_y*global_time + user_phase_y)
-                    vertical_P2.voltage = -vertical_P1.voltage
-                else:
-                    horizontal_P1.voltage = user_voltage_horiz
-                    horizontal_P2.voltage = -horizontal_P1.voltage
-                    vertical_P1.voltage = user_voltage_vert
-                    vertical_P2.voltage = -vertical_P1.voltage
-
                 force_x = 0.0
                 force_y = 0.0
+                
+                p.image.set_alpha(255)
+                
+                # Definir voltajes de usuario (manual o sinusoidal)
+                if user_mode_sinusoidal:
+                    horizontal_P1.voltage = AMPLITUDE * math.sin(2*math.pi*user_freq_x*global_time + user_phase_x)
+                    horizontal_P2.voltage = -horizontal_P1.voltage
+                    vertical_P1.voltage = AMPLITUDE * math.sin(2*math.pi*user_freq_y*global_time + user_phase_y)
+                    vertical_P2.voltage = -vertical_P1.voltage
+                else:
+                    horizontal_P1.voltage = AMPLITUDE * user_voltage_horiz
+                    horizontal_P2.voltage = -horizontal_P1.voltage
+                    vertical_P1.voltage = AMPLITUDE * user_voltage_vert
+                    vertical_P2.voltage = -vertical_P1.voltage
+
+                
                 # Aplicar fuerzas si el electrón está dentro de las placas
                 if HORIZONTAL_PLAQUES_Z <= p.pos[2] <= HORIZONTAL_PLAQUES_Z + PLAQUE_LENGTH:
                     force_x = horizontal_P1.exertForce(horizontal_P2, PLAQUE_SEPARATION)
@@ -226,57 +224,29 @@ def gameLoop(screen):
                 # Dibujar en vistas laterales
                 p.draw_in_view(screen, 'top', ORIGIN_TOP, SCALE_SIDES, SCREEN_DIMENSIONS)
                 p.draw_in_view(screen, 'side', ORIGIN_SIDE, SCALE_SIDES, SCREEN_DIMENSIONS)
+
+                # Quitar el delay que hay en que los electrones lleguen al final del tubo y se muestren en frontal
                 rect = p.image.get_rect(center=(int(ORIGIN_SIDE[0] + p.pos[2]*SCALE_SIDES),
                                         int(ORIGIN_SIDE[1] - p.pos[1]*SCALE_SIDES)))
                 if rect.centerx >= 335:
-                    p.pos[2] = TUBE_LENGTH  # forzamos impacto
+                    p.pos[2] = TUBE_LENGTH  # forzar impacto
                 
             elif p.pos[2] >= TUBE_LENGTH and front_electron_lifetime[p] > 0:
-                # El electrón ha llegado a la pantalla frontal
                 front_electron_lifetime[p] -= 1
-                alphaVal = p.calculateOpacity()
-                p.image.set_alpha(255)  # TODO: cambiar a alphaVal cuando funcione
+                alphaVal = p.calculateOpacity(user_voltage_accel)
+                p.image.set_alpha(alphaVal)
                 
-                # Fijar SOLO UNA VEZ
-                if not p.fixed:
-                    # Corrigir overshoot en Z
-                    overshoot = p.pos[2] - TUBE_LENGTH
-                    if p.velocity[2] != 0:
-                        t_correction = overshoot / p.velocity[2]
-                    else:
-                        t_correction = 0
-                    
-                    # Retroceder X e Y proporcionalmente
-                    p.pos[0] -= p.velocity[0] * t_correction
-                    p.pos[1] -= p.velocity[1] * t_correction
-                    # Colocar Z exactamente en la pantalla
-                    p.pos[2] = TUBE_LENGTH
-
-                    # Clamp para evitar salirse de la pantalla física
-                    half_dim = SCREEN_DIMENSIONS / 2
-                    if p.pos[0] < -half_dim: p.pos[0] = -half_dim
-                    elif p.pos[0] > half_dim: p.pos[0] = half_dim
-                    if p.pos[1] < -half_dim: p.pos[1] = -half_dim
-                    elif p.pos[1] > half_dim: p.pos[1] = half_dim
-
-                    # Congelar electrón
-                    p.velocity = [0, 0, 0]
-                    p.fixed = True
+                p.velocity = [0, 0, 0]
                 
-                # Dibujar en vista frontal usando la escala consistente
                 p.draw_in_view(screen, 'front', ORIGIN_FRONT, SCALE_FRONT, SCREEN_DIMENSIONS)
-                
             else:
-                # El electrón ha terminado su vida útil en la pantalla
                 electrons_to_remove.append(p)
         
-        # Remover electrones que han terminado su ciclo de vida
         for electron in electrons_to_remove:
             if electron in front_electron_lifetime:
                 front_electron_lifetime.pop(electron)
             particulas.remove(electron)
         
-        # Actualizar todas las partículas
         particulas.update(dt)
         
         pygame.display.flip()

@@ -21,37 +21,28 @@ Cada instancia del electrón se inicializa con esa mangitud de velocidad y esa
 se mantiene constante durante toda su trayectoria porque el campo eléctrico de
 las placas se cancela en Z por simetría.
 
-Cuando se instancia el electrón, no se dibujará en la placa frontal hasta que
-el tiempo elapsado desde su instanciamiento sea el correcto dada la velocidad
-en Z -> t = x/v_z
-
-Para el brillo, se usará la siguiente ecuación para determinar la fracción
-de opacidad que tendrá la imagen del electrón en la placa frontal:
-b = (Vz - Vz_min) * 255/ (Vz_max - Vz_min)
-factor de 255 porque pygame tiene opacidad máxima en 255, mínima en 0
+* SE USARON CONSTANTES ARBITRARIAS PARA FINES SIMULATIVOS, M = 1, K = 1.
 """
 
 import os
 import math
 import pygame
-from constants import E, M_E, V_CANNON_MIN, V_CANNON_MAX
+from constants import *
+from PlacaClass import Placa
 
-VZ_max = math.sqrt(2*E*V_CANNON_MAX/M_E)
-VZ_min = math.sqrt(2*E*V_CANNON_MIN/M_E)
+# Por la utilización de unidades arbitrarias, el cálculo anterior de las velocidades límite no funciona.
+# VZ_max = math.sqrt(2*(1)*VOLTAGE_ACCEL_MAX/1)
+# VZ_min = math.sqrt(2*(1)*VOLTAGE_ACCEL_MIN/1)
 
 def m_to_px(meters, scale):
     return meters*scale
 
-# NOTA: Las unidades de la masa fueron consideradas de tal forma que la masa
-# del electrón sea 1 (unidades arbitrarias) porque estaba retornando valores
-# de velocidad extremadamente altos (> 10^15 m/s^2)
 class Electron(pygame.sprite.Sprite):
     # mass = M_E
     
     def __init__(self, Xo, Yo, Zo, VoX, VoY, VoZ, img):
         super().__init__()
         # Velocidad y posición en Z solo para simular frecuencia de golpeo de electrones (brillo).
-        # castear a float porque estaba dando errores de precisión
         self.pos = [float(Xo), float(Yo), float(Zo)]
         self.velocity = [float(VoX), float(VoY), float(VoZ)]
         self.fixed = False
@@ -60,14 +51,14 @@ class Electron(pygame.sprite.Sprite):
         
         self.rect = self.image.get_rect()
     
-    def calculateOpacity(self) -> int:
-        if VZ_max == VZ_min:  # caso de división por cero
-            return 255
+    def calculateOpacity(self, voltage: float) -> int:
         
-        
-        calc = (abs(self.velocity[2]) - VZ_min) / (VZ_max - VZ_min)
+        # Normalizar para que con la velocidad mínima sea la mitad de opacidad, con la máxima el 100%
+        # con base a los voltajes de las placas
+        calc = abs(voltage - VOLTAGE_ACCEL_MIN) / (VOLTAGE_ACCEL_MAX - VOLTAGE_ACCEL_MIN)
         calc = max(0.0, min(1.0, calc)) # estandarizar a [0,1] por si da error de negativos
-        return int(255*calc)
+        opacity = 0.25 + (0.75*calc)
+        return int(255*opacity)
         
     def applyForce(self, Fx: float, Fy: float):
         self.force[0] += Fx
@@ -101,6 +92,8 @@ class Electron(pygame.sprite.Sprite):
         """
         if view == 'front':  
             # vista frontal: pantalla en plano x-y
+            # sumar la mitad de las dimensiones de la pantalla a x, restar a y para que quede
+            # en el centro
             x_px = origin_px[0] + (self.pos[0] + 0.5 * screenDimensions) * scale
             y_px = origin_px[1] + (0.5 * screenDimensions - self.pos[1]) * scale
         elif view == 'side':
@@ -114,7 +107,7 @@ class Electron(pygame.sprite.Sprite):
         else:
             return
                 
-        # Verificar que las coordenadas sean válidas
+        # Debugger de coordenadas inválidas
         if not (math.isfinite(x_px) and math.isfinite(y_px)):
             print(f"Coordenadas inválidas en vista {view}: x_px={x_px}, y_px={y_px}")
             print(f"Posición del electrón: {self.pos}")
@@ -122,11 +115,10 @@ class Electron(pygame.sprite.Sprite):
             
         rect = self.image.get_rect(center=(int(x_px), int(y_px)))
 
-        # Límites específicos para cada vista
+        # Límites específicos para cada vista (para no dibujar afuera de ellas)
         if view == 'front':
             if 425 <= rect.centerx <= 1150 and 130 <= rect.centery <= 855:
                 surface.blit(self.image, rect)
         else:
-            # Para vistas laterales, usar límites más amplios
             if -100 < rect.centerx < 335 and -100 < rect.centery < 1000:
                 surface.blit(self.image, rect)
