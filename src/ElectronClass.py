@@ -53,7 +53,7 @@ class Electron(pygame.sprite.Sprite):
     
     def calculateOpacity(self, voltage: float) -> int:
         
-        # Normalizar para que con la velocidad mínima sea la mitad de opacidad, con la máxima el 100%
+        # Normalizar para que con la velocidad mínima sea un cuarto de opacidad, con la máxima el 100%
         # con base a los voltajes de las placas
         calc = abs(voltage - VOLTAGE_ACCEL_MIN) / (VOLTAGE_ACCEL_MAX - VOLTAGE_ACCEL_MIN)
         calc = max(0.0, min(1.0, calc)) # estandarizar a [0,1] por si da error de negativos

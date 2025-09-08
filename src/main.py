@@ -178,13 +178,11 @@ def gameLoop(screen):
         if global_time - last_electron_spawn >= electron_spawn_interval:
             e = Electron(0.0, 0.0, 0.0, 0.0, 0.0, user_voltage_accel, electronImg)
             particulas.add(e)
-            e.fixed = False
             front_electron_lifetime[e] = user_latency
             last_electron_spawn = global_time
         
         # Lista temporal para evitar modificar el grupo durante iteración
         electrons_to_remove = []
-        
         
         for p in particulas:
             if p.pos[2] < TUBE_LENGTH:

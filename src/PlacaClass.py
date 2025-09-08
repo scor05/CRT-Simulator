@@ -27,9 +27,8 @@ from constants import E
 # la misma razón explicada en ElectronClass.py, estaba retornando valores
 # muy altos, por lo que se consideraron unidades arbitrarias.
 class Placa():
-    def __init__(self, Z, volt): # en metros
+    def __init__(self, Z, volt): # en metros, Volts
         self.Z = Z
-        self.y = 0
         self.voltage = volt
     
     def exertForce(self, twin, distance) -> float:
