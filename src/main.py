@@ -161,7 +161,7 @@ def gameLoop(screen):
             f"F+/G-: Frecuencia X = {user_freq_x:.2f} Hz",
             f"V+/B-: Frecuencia Y = {user_freq_y:.2f} Hz",
             f"R+/T-: Desfase = {user_phase:.2f} rad",
-            f"Z+/X-: Latencia en pantalla = {user_latency} frames",
+            f"Z+/X-: Latencia en pantalla = {(user_latency / FPS):.2f} s",
         ]
 
         y_offset = controlsRect.top + 30
