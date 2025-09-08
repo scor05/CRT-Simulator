@@ -63,7 +63,7 @@ pip install pygame
 <pre>
 git clone https://github.com/scor05/CRT-Simulator.git
 cd CRT-Simulator
-python main.py
+python src/main.py
 </pre>
 
 <h2>Estructura del proyecto</h2>
