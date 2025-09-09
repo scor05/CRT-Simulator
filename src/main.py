@@ -122,7 +122,7 @@ def gameLoop(screen):
                 elif event.key == pygame.K_v:
                     user_freq_y += 0.05
                 elif event.key == pygame.K_b:
-                    user_freq_y = max(0.1, user_freq_y - 0.1)
+                    user_freq_y = max(0.1, user_freq_y - 0.05)
                 elif event.key == pygame.K_r:
                     user_phase += 0.05
                 elif event.key == pygame.K_t:
@@ -197,7 +197,7 @@ def gameLoop(screen):
                     # poner phi_x = 0 para que el desfase neto sea solo el desfase en y
                     horizontal_P1.voltage = AMPLITUDE * math.sin(2*math.pi*user_freq_x*global_time)
                     horizontal_P2.voltage = -horizontal_P1.voltage
-                    vertical_P1.voltage = AMPLITUDE * math.sin(2*math.pi*user_freq_y*global_time + user_phase) # pygame +y es para abajo, invertir esto
+                    vertical_P1.voltage = AMPLITUDE * math.sin(2*math.pi*user_freq_y*global_time + user_phase)
                     vertical_P2.voltage = -vertical_P1.voltage
                 else:
                     horizontal_P1.voltage = AMPLITUDE * user_voltage_horiz
