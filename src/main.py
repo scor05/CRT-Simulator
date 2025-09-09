@@ -80,7 +80,7 @@ def createWindow():
     pygame.display.set_caption("Simulador de CRT")
     screen.fill((255,255,255))
     for i in imageList:
-        i.convert_alpha
+        i.convert_alpha()
     
     # tipo de fuente personalizado
     global labelFont, titleFont, controlsFont
@@ -160,7 +160,7 @@ def gameLoop(screen):
             f"M: Modo = {'Sinusoidal' if user_mode_sinusoidal else 'Manual'}",
             f"F+/G-: Frecuencia X = {user_freq_x:.2f} Hz",
             f"V+/B-: Frecuencia Y = {user_freq_y:.2f} Hz",
-            f"R+/T-: Desfase = {user_phase:.2f} rad",
+            f"R+/T-: Desfase (Y - X) = {user_phase:.2f} rad",
             f"Z+/X-: Latencia en pantalla = {(user_latency / FPS):.2f} s",
         ]
 
@@ -194,9 +194,10 @@ def gameLoop(screen):
                 
                 # Definir voltajes de usuario (manual o sinusoidal)
                 if user_mode_sinusoidal:
-                    horizontal_P1.voltage = AMPLITUDE * math.sin(2*math.pi*user_freq_x*global_time + user_phase)
+                    # poner phi_x = 0 para que el desfase neto sea solo el desfase en y
+                    horizontal_P1.voltage = AMPLITUDE * math.sin(2*math.pi*user_freq_x*global_time)
                     horizontal_P2.voltage = -horizontal_P1.voltage
-                    vertical_P1.voltage = AMPLITUDE * math.sin(2*math.pi*user_freq_y*global_time + user_phase)
+                    vertical_P1.voltage = AMPLITUDE * math.sin(2*math.pi*user_freq_y*global_time + user_phase) # pygame +y es para abajo, invertir esto
                     vertical_P2.voltage = -vertical_P1.voltage
                 else:
                     horizontal_P1.voltage = AMPLITUDE * user_voltage_horiz
