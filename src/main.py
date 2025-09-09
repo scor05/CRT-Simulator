@@ -196,7 +196,7 @@ def gameLoop(screen):
                 if user_mode_sinusoidal:
                     horizontal_P1.voltage = AMPLITUDE * math.sin(2*math.pi*user_freq_x*global_time + user_phase)
                     horizontal_P2.voltage = -horizontal_P1.voltage
-                    vertical_P1.voltage = AMPLITUDE * math.sin(2*math.pi*user_freq_y*global_time)
+                    vertical_P1.voltage = AMPLITUDE * math.sin(2*math.pi*user_freq_y*global_time + user_phase)
                     vertical_P2.voltage = -vertical_P1.voltage
                 else:
                     horizontal_P1.voltage = AMPLITUDE * user_voltage_horiz
